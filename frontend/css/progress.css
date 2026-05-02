@@ -1,0 +1,25 @@
+/* ═══════════════════════════════════════════
+   PROGRESS TAB
+═══════════════════════════════════════════ */
+.period-tabs{display:flex;gap:6px;margin-bottom:16px}
+.ptab{padding:7px 18px;border:1.5px solid var(--border-strong);border-radius:var(--r999);font-size:13px;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text-muted);transition:all .15s}
+.ptab.active{background:var(--g800);color:#fff;border-color:var(--g800)}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);padding:16px;margin-bottom:14px;box-shadow:var(--s1)}
+.chart-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.badge-cell{background:var(--surface);border:1px solid var(--border);border-radius:var(--r14,var(--r12));padding:14px 10px;text-align:center;position:relative;overflow:hidden;transition:all .2s;box-shadow:var(--s1)}
+.badge-cell.earned{border-color:var(--g300);box-shadow:0 0 0 1px var(--g300),var(--s2)}
+.badge-cell.earned::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(61,143,110,.07),transparent);pointer-events:none}
+.badge-cell.locked{opacity:.38;filter:grayscale(.7)}
+.badge-ico{font-size:30px;display:block;margin-bottom:6px}
+.badge-name{font-size:11px;font-weight:700;color:var(--text)}
+.badge-desc{font-size:10px;color:var(--text-muted);margin-top:2px;line-height:1.3}
+.badge-xp{font-size:10px;font-weight:700;color:var(--a600);margin-top:4px}
+.ai-report-area{margin-top:16px}
+.report-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--r16);padding:20px;box-shadow:var(--s2)}
+.report-meta{font-size:11px;color:var(--text-muted);margin-bottom:14px}
+.report-metrics{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.report-metric{background:var(--bg);border:1px solid var(--border);border-radius:var(--r12);padding:10px 14px;text-align:center}
+.rm-n{font-family:'Lora',serif;font-size:24px;font-weight:500;color:var(--b600)}
+.rm-l{font-size:11px;color:var(--text-muted);margin-top:2px}
+.report-text{font-size:14px;color:var(--text-mid);line-height:1.75;white-space:pre-wrap}

@@ -1,0 +1,685 @@
+================================================================================
+            RECOVERY COMPASS — COMPLETE PROJECT DOCUMENTATION
+               All Functionalities & Testing Instructions
+================================================================================
+ Project: Recovery Routine AI (Recovery Compass)
+ Version: 2.0.0
+ Type:    AI-Powered Adaptive Addiction Recovery Platform
+================================================================================
+
+
+TABLE OF CONTENTS
+-----------------
+  1.  HOW TO RUN THE SYSTEM
+  2.  PROJECT FILE STRUCTURE
+  3.  CORE AI CAPABILITIES
+  4.  PATIENT FEATURES
+  5.  FACILITY / CLINICIAN FEATURES
+  6.  SECURITY & AUTHENTICATION
+  7.  API ENDPOINTS (FULL LIST)
+  8.  TESTING GUIDE (STEP-BY-STEP)
+  9.  DATABASE & DATA FLOW
+
+
+================================================================================
+1. HOW TO RUN THE SYSTEM
+================================================================================
+
+  Prerequisites:
+    - Python 3.10+ with Anaconda or pip
+    - Internet connection (for Neon PostgreSQL cloud database)
+
+  Step 1: Install dependencies
+    > cd "d:\desktop - March 2026\Vikartr\Addiction"
+    > pip install -r requirements.txt
+
+  Step 2: Start the backend server
+    > python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+
+  Step 3: Open the application
+    Open your browser and go to: http://localhost:8000/
+
+  The server must be running for ALL features to work (frontend + backend
+  communicate via REST API).
+
+
+================================================================================
+2. PROJECT FILE STRUCTURE
+================================================================================
+
+  recovery-compass.html  — Full frontend (single-file HTML/CSS/JS app)
+  app.py                 — FastAPI backend server (all API routes)
+  db.py                  — Database layer (Neon PostgreSQL via psycopg2)
+  rl_bandit.py           — Contextual Bandit RL model (AI task selector)
+  task_merger.py          — Merges general + clinician tasks for AI
+  ai_learning_log.py     — Generates AI learning intelligence reports
+  client_data_manager.py — File-based clinical audit system (premium)
+  pipeline.py            — PDF parsing & knowledge extraction pipeline
+  rag_pipeline.py        — RAG pipeline for clinical text queries
+  output.json            — Master clinical knowledge base (1195 tasks)
+  condition_triggers.txt — Extracted clinical condition triggers
+  .ENV                   — Environment variables (DB connection string)
+  requirements.txt       — Python package dependencies
+  test_new_features.py   — Automated backend integration tests
+  test_premium.py        — Premium feature test suite
+  client data/           — Directory for per-client audit JSON files
+  chroma_db/             — ChromaDB vector store for RAG
+
+
+================================================================================
+3. CORE AI CAPABILITIES
+================================================================================
+
+3.1  REINFORCEMENT LEARNING (Contextual Bandit Model)
+-----------------------------------------------------
+  File: rl_bandit.py
+
+  WHAT IT DOES:
+    The AI uses a Contextual Bandit algorithm (a type of Reinforcement Learning)
+    to recommend daily recovery tasks personalized to each user. It considers:
+      - Current mood (1-5 scale)
+      - Current urge level (0-10 scale)
+      - Current streak (days of continuous recovery)
+      - Addiction type (alcohol, opioids, gambling, etc.)
+
+  HOW IT LEARNS:
+    Every time a user completes a task, the system records the OUTCOME:
+      - Was the task completed? (yes/no)
+      - What was the urge BEFORE the task?
+      - What was the urge AFTER the task?
+      - What was the user's mood?
+      - What was their streak?
+
+    The RL model calculates a REWARD based on urge reduction:
+      reward = (urge_before - urge_after) / 10.0
+
+    This reward updates the Q-table (a state-action value table) using:
+      Q(state, action) += alpha * (reward - Q(state, action))
+
+    Over time, the model learns which tasks work best for specific
+    user states (e.g., "when urge is high and mood is low, recommend
+    breathing exercises rather than journaling").
+
+  KEY AI FEATURES:
+    a) Epsilon-Greedy Exploration (epsilon = 0.2)
+       - 80% of the time: recommends the best-known task
+       - 20% of the time: explores random tasks to discover new winners
+
+    b) Cross-User Aggregate Learning
+       - When a NEW user starts, the model checks the database for
+         historical performance data from ALL past users
+       - This "warm-starts" the new user's recommendations using the
+         best tasks discovered across the entire population
+
+    c) Priority Weighting for Clinician Tasks
+       - Tasks prescribed by clinicians get a 2.0x priority weight
+       - This means clinician-prescribed tasks are preferred when
+         their Q-value is similar to general tasks
+
+    d) Contextual State Space
+       - State = (mood_bucket, urge_bucket, streak_bucket)
+       - Mood: low (1-2), mid (3), high (4-5)
+       - Urge: low (0-3), mid (4-6), high (7-10)
+       - Streak: new (0-2), building (3-13), strong (14+)
+
+  WHERE AI DATA IS STORED:
+    - Q-table: In-memory on the server (resets on restart, warm-started
+      from database on next boot)
+    - Task outcomes: PostgreSQL database (table: task_outcomes)
+      This is PERMANENT and survives server restarts.
+    - The static output.json is NEVER modified by the AI.
+
+  HOW TO TEST:
+    > curl "http://localhost:8000/get-tasks?mood=3&urge=7&streak=2&addiction_type=alcohol"
+    
+    This returns 3 AI-recommended tasks. Run it multiple times with
+    different parameters to see how recommendations change.
+
+    Complete a task to train the model:
+    > curl -X POST http://localhost:8000/complete-task ^
+        -H "Content-Type: application/json" ^
+        -d "{\"task_id\":\"gen_42\",\"completed\":true,\"prev_urge\":7,\"next_urge\":3,\"mood\":3,\"streak\":2}"
+
+    Check AI learning progress:
+    > curl http://localhost:8000/ai-learning-log
+
+
+3.2  TASK MERGING SYSTEM
+-----------------------------------------------------
+  File: task_merger.py
+
+  WHAT IT DOES:
+    For premium (facility-linked) users, this module merges two task pools:
+      1. General tasks from output.json (1195 clinical recovery tasks)
+      2. Clinician-prescribed tasks from PostgreSQL
+
+    Merging rules:
+      - Clinician tasks get source='clinician' and 2x priority weight
+      - "avoid" tasks are separated from "do" tasks
+      - If a clinician task overlaps with a general task trigger, clinician wins
+
+  HOW TO TEST:
+    Upload clinician tasks via the Facility Portal (Treatment tab), then
+    request tasks for that patient — you should see clinician tasks
+    appear with higher priority.
+
+
+3.3  RAG PIPELINE (Clinical Knowledge Retrieval)
+-----------------------------------------------------
+  File: rag_pipeline.py
+
+  WHAT IT DOES:
+    Uses ChromaDB vector database with sentence embeddings to perform
+    semantic search over the clinical knowledge base extracted from:
+      - NIDA Principles of Drug Addiction Treatment
+      - SAMHSA TIP 34 Brief Interventions
+      - ASAM Multidimensional Assessment Guide
+
+    When the AI coach or report generator needs clinical context,
+    it queries this vector store for relevant passages.
+
+
+3.4  PDF PARSING & KNOWLEDGE EXTRACTION
+-----------------------------------------------------
+  File: pipeline.py
+
+  WHAT IT DOES:
+    Ingests clinical PDF documents, chunks them semantically (preserving
+    clinical "If/Then" logic and interventions), uses an LLM to extract
+    structured data, and outputs the finalized output.json knowledge base.
+
+
+3.5  AI LEARNING LOG (Intelligence Report)
+-----------------------------------------------------
+  File: ai_learning_log.py
+
+  WHAT IT DOES:
+    Generates a comprehensive JSON report showing exactly what the AI
+    has learned from user interactions. Includes:
+      - Total learning events (how many task completions recorded)
+      - Per-addiction analysis (which addiction types have most data)
+      - Clinician vs General task comparison (which source performs better)
+      - Top/bottom performing tasks (best and worst by reward)
+      - Warm-start readiness (can new users benefit from past data?)
+      - Recent learning events (last 50 interactions with rewards)
+
+  HOW TO TEST:
+    Browser:  http://localhost:8000/ai-learning-log
+    Terminal: curl http://localhost:8000/ai-learning-log
+
+    Also generates a local file: ai_learning_log.json
+
+
+3.6  AI-POWERED COACH (Claude Integration)
+-----------------------------------------------------
+  File: recovery-compass.html (frontend JavaScript)
+
+  WHAT IT DOES:
+    An in-app AI chatbot powered by Claude (Anthropic API) that acts as
+    a recovery coach. It:
+      - Uses the patient's actual check-in data, journal entries, and
+        streak to make responses deeply personal
+      - Follows strict clinical safety guidelines (never diagnoses,
+        never recommends medications, always defers to providers)
+      - 5 sessions per day limit
+      - Quick prompt buttons for common situations
+
+  HOW TO TEST:
+    Go to the Coach tab in the patient dashboard and send a message.
+    Try: "I'm having strong cravings right now" or "Help me with stress"
+
+
+3.7  AI-GENERATED REPORTS
+-----------------------------------------------------
+  File: recovery-compass.html (frontend JavaScript)
+
+  WHAT IT DOES:
+    - PATIENT: Generates personalized progress reports with sections on
+      Progress Summary, What's Working, Areas to Watch, This Week's Focus
+    - FACILITY: Generates formal clinical progress reports suitable for
+      patient charts with Clinical Summary, Risk Factors, Recommendations
+
+  HOW TO TEST:
+    Patient: Progress tab → "Generate AI Report" button
+    Facility: Reports tab → Select patient → "Generate Clinical Report"
+
+
+================================================================================
+4. PATIENT FEATURES
+================================================================================
+
+4.1  ONBOARDING (5-Step Workflow)
+  Step 1: Username, password, age, date of birth, gender, reason for starting
+  Step 2: Addiction selection (16 options: substance + behavioral)
+  Step 3: Clinical assessment (6 ASAM-style questions)
+  Step 4: Goal setting, personal "why", optional facility code
+  Step 5: Notification preferences, SOS button introduction
+
+4.2  DAILY TASK RECOMMENDATIONS
+  - 3 AI-selected tasks based on mood, urge, streak, addiction type
+  - Task completion triggers urge follow-up modal
+  - XP awarded (+15 per task completion)
+  - AI model trains on each completion
+
+4.3  DAILY CHECK-IN
+  - Mood selection (5 levels: Great to Crisis)
+  - Urge intensity slider (0-10)
+  - Trigger identification (10 common triggers)
+  - Coping strategy logging (8 strategies)
+  - +10 XP per check-in
+
+4.4  JOURNAL
+  - AI-generated writing prompts (shuffles from curated list)
+  - Free-text journal entries with mood tagging
+  - Entry history with mood visualization
+  - +8 XP per journal entry
+
+4.5  AI COACH (see 3.6 above)
+
+4.6  PROGRESS TRACKING
+  - Mood trend chart (7-day and 30-day views, Chart.js)
+  - Urge trend chart
+  - Coping strategy frequency bar chart
+  - Badge/achievement grid (15 badges, e.g., 3-day streak, 30-day streak)
+
+4.7  GAMIFICATION
+  - XP system with levels (Seedling, Sprout, Sapling, Tree, Forest, etc.)
+  - Recovery streak counter with animated ring
+  - 15 unlockable badges
+  - Streak milestones (3, 7, 14, 30, 90, 180, 365 days)
+
+4.8  SOS / CRISIS SUPPORT
+  - Always-accessible red SOS button
+  - Crisis hotline numbers (988 Lifeline, Crisis Text Line, SAMHSA)
+  - Immediate urge intervention tips
+
+4.9  NOTIFICATION SYSTEM
+  - Morning intention reminders
+  - Evening reflection reminders
+  - Missed check-in alerts (if >2 days since last check-in)
+
+4.10  INSPIRATIONAL QUOTES
+  - Daily rotating recovery-themed quotes on homepage
+
+
+================================================================================
+5. FACILITY / CLINICIAN FEATURES
+================================================================================
+
+5.1  FACILITY REGISTRATION & LOGIN
+  - Registration: Create a clinic profile with a name and password. A unique access code is generated automatically.
+  - Login: Access the clinic portal using the generated access code and password.
+
+5.2  PATIENT MANAGEMENT
+  - Patient list with search/filter
+  - Patient cards showing: name, addictions, age, gender, risk level,
+    days in recovery, check-in count, journal count, last activity
+  - High-risk patient alerts
+  - Missed check-in alerts
+
+5.3  PATIENT DETAIL VIEW
+  - Full ASAM-style clinical assessment profile
+  - Recovery statistics (days, check-ins, avg urge, avg mood)
+  - Active treatment plan display
+  - Recent check-ins (last 5) with mood/urge data
+  - Journal excerpts (last 3)
+
+5.4  TREATMENT PLAN MANAGEMENT
+  - Diagnosis & medications entry
+  - Treatment modality selection (CBT, MET, DBT, EMDR, etc.)
+  - Recovery goal management (add/toggle/delete goals)
+  - Treatment notes (visible to patient)
+  - Clinician-only notes (private)
+  - Next appointment scheduling
+
+5.5  CLINICIAN TASK UPLOAD
+  - Upload custom clinical tasks for specific premium patients
+  - Each task has: trigger, action, type (do/avoid), difficulty, priority
+  - Uploaded tasks feed directly into the AI recommendation engine
+  - Tasks appear with 2x priority weight in RL model
+
+5.6  AI CLINICAL REPORTS
+  - Formal clinical progress reports generated by Claude AI
+  - Professional language suitable for patient charts
+  - Sections: Clinical Summary, Progress Assessment, Risk Factors,
+    Treatment Response, Recommendations, Next Steps
+
+5.7  PATIENT APPROVAL WORKFLOW
+  - Pending approval queue for facility-linked signups
+  - Each card shows: name, DOB, addictions, signup date
+  - Approve/Reject buttons with animated transitions
+  - Real-time badge count showing pending requests
+
+5.8  ADD NEW PATIENT
+  - Manual patient entry with: name, age, gender, addictions,
+    start date, risk level
+
+
+================================================================================
+6. SECURITY & AUTHENTICATION
+================================================================================
+
+6.1  OTP VERIFICATION & AUTHENTICATION
+  - Patient Login: Uses explicit Username and Password created during onboarding.
+  - Facility Login: Uses explicit Access Code and Password created during registration.
+  - New Patient Signup: 4-digit OTP code generated at the end of onboarding for extra verification.
+  - Displayed via alert() (development mode — production would use
+    SMTP/SMS provider)
+  - Sleek 4-digit input overlay with:
+    - Auto-advance on digit entry
+    - Backspace support
+    - Paste support (for full 4-digit paste)
+    - Error animation (shake) on wrong code
+    - Success animation (green highlight) on correct code
+    - Resend OTP button
+
+6.2  FACILITY APPROVAL WORKFLOW
+  - Users who signup with a facility code get status = "pending"
+  - Pending users see a "Waiting for Facility Approval" screen
+  - Screen auto-polls server every 10 seconds for status update
+  - Once approved, auto-redirects to patient dashboard
+  - If rejected, shows rejection message
+
+6.3  CLIENT DATA ISOLATION
+  - Premium client data stored in isolated directories:
+    client data/{client_id}/
+  - Each clinical update creates a timestamped JSON audit file
+  - Free-tier users have NO clinical data footprint
+  - GDPR-compliant data erasure endpoint available
+
+6.4  DATABASE SECURITY
+  - PostgreSQL on Neon (cloud-hosted, SSL-encrypted)
+  - Environment variables for sensitive credentials
+  - No plaintext passwords in code
+
+
+================================================================================
+7. API ENDPOINTS (FULL LIST)
+================================================================================
+
+  PATIENT ENDPOINTS:
+  ──────────────────
+  GET  /                                  — Serve frontend HTML
+  GET  /get-tasks                         — AI task recommendations
+       Params: mood, urge, streak, addiction_type, user_id (optional)
+  POST /complete-task                     — Record task completion (AI learns)
+       Body: task_id, completed, prev_urge, next_urge, mood, streak
+  POST /user/create                       — Register new user
+  GET  /user/{user_id}                    — Fetch user profile
+  GET  /user/status/{user_id}             — Check approval status (polling)
+  POST /user/set-premium                  — Toggle premium status
+
+  FACILITY ENDPOINTS:
+  ──────────────────
+  GET  /facility/pending-users/{code}     — List pending approvals
+  POST /facility/approve/{user_id}        — Approve a patient
+  POST /facility/reject/{user_id}         — Reject a patient
+
+  CLINICIAN ENDPOINTS:
+  ──────────────────
+  POST /clinician/upload-tasks            — Upload clinician tasks
+  GET  /clinician/get-tasks/{user_id}     — View clinician tasks for user
+  DELETE /clinician/delete-task/{task_id} — Remove a clinician task
+
+  EXTERNAL / API ENDPOINTS:
+  ──────────────────
+  POST /api/v1/external/schedule          — External facility scheduler webhook
+       Body: user_id, clinician_name, facility_code, schedule_period, tasks
+  GET  /api/v1/client-records/{id}        — Fetch client audit records
+  DELETE /api/v1/client-records/{id}      — GDPR data erasure
+
+  ANALYTICS ENDPOINTS:
+  ──────────────────
+  GET  /analytics/top-tasks/{addiction}    — Top tasks by addiction type
+  GET  /analytics/clinician-vs-general/{a} — Source performance comparison
+  GET  /ai-learning-log                    — Full AI intelligence report
+  GET  /docs                               — Swagger API documentation (auto)
+
+
+================================================================================
+8. TESTING GUIDE (STEP-BY-STEP)
+================================================================================
+
+  *** IMPORTANT: The server MUST be running first! ***
+  > python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+
+
+  TEST 1: AUTOMATED BACKEND TESTS
+  ────────────────────────────────
+  What:  Runs 9 automated tests covering user creation, task retrieval,
+         task completion, premium features, and analytics.
+  How:   > python test_new_features.py
+  Expect: "ALL 9 TESTS PASSED!"
+
+
+  TEST 2: FULL PATIENT SIGNUP FLOW (Browser)
+  ────────────────────────────────
+  1. Open http://localhost:8000/
+  2. Under "I'm on a recovery journey", click "Register"
+  3. Complete all 5 onboarding steps:
+     - Enter username: "Test User", password: "password123", age: 25, DOB: 2001-01-01
+     - Select "Alcohol" addiction
+     - Fill assessment questions
+     - Select "Complete abstinence" goal
+     - Leave facility code EMPTY (free tier)
+  4. Click "Start my journey"
+  5. EXPECT: OTP alert appears with a 4-digit code
+  6. Enter the 4-digit code in the overlay
+  7. EXPECT: Green success, redirects to patient dashboard
+  8. VERIFY: Dashboard shows streak, tasks, quote, stats
+
+
+  TEST 3: PATIENT LOGIN (Browser)
+  ────────────────────────────────
+  1. After Test 2, refresh the page
+  2. Under "I'm on a recovery journey", click "Login"
+  3. Enter the username and password from Test 2
+  4. EXPECT: Dashboard should load successfully
+  5. Try entering WRONG password → should show error toast
+
+
+  TEST 4: FACILITY APPROVAL FLOW (Browser — Full Loop)
+  ────────────────────────────────
+  A. Sign up as patient with facility code:
+     1. Clear localStorage: F12 → Console → localStorage.clear() → refresh
+     2. Sign up through onboarding with facility code "CLINIC001"
+     3. Complete OTP
+     4. EXPECT: "Waiting for Facility Approval" screen with pulsing icon
+     5. Note your user's name
+
+  B. Register & Login as facility:
+     1. Open a NEW browser tab → http://localhost:8000/
+     2. Under "I'm a treatment facility", click "Register"
+     3. Enter clinic name "Test Clinic" and a password.
+     4. Note the generated facility code.
+     5. Go back and click "Login" for facilities, use the code and password.
+     6. EXPECT: Facility portal opens
+
+  C. Approve the patient:
+     1. Click "Approvals" tab in the bottom nav
+     2. EXPECT: See the patient you just signed up
+     3. Click "Approve"
+     4. EXPECT: Card animates away
+
+  D. Verify auto-redirect:
+     1. Go back to the patient tab
+     2. EXPECT: Within 10 seconds, auto-redirects to dashboard
+
+
+  TEST 5: AI TASK RECOMMENDATIONS (Terminal)
+  ────────────────────────────────
+  > curl "http://localhost:8000/get-tasks?mood=3&urge=7&streak=2&addiction_type=alcohol"
+  
+  EXPECT: JSON with 3 tasks, each having id, name, difficulty, source
+  
+  Try different parameters:
+  > curl "http://localhost:8000/get-tasks?mood=1&urge=9&streak=0&addiction_type=opioids"
+  > curl "http://localhost:8000/get-tasks?mood=5&urge=1&streak=30&addiction_type=gambling"
+  
+  Results should differ based on mood/urge/streak context.
+
+
+  TEST 6: AI LEARNING (Task Completion → Model Training)
+  ────────────────────────────────
+  1. Complete a task in the browser:
+     - Go to patient dashboard → click a task checkmark
+     - Enter urge level in the follow-up modal → click "Submit & Earn XP"
+  
+  2. Verify the AI learned:
+     > curl http://localhost:8000/ai-learning-log
+     
+     EXPECT: "total_learning_events" should increase by 1
+  
+  3. Check the local log file:
+     Open ai_learning_log.json — should have the latest learning data
+
+
+  TEST 7: CLINICIAN TASK UPLOAD (Browser)
+  ────────────────────────────────
+  1. Login to Facility Portal (see Test 4B)
+  2. Go to "Treatment" tab
+  3. Scroll to "Upload Clinician Tasks" section
+  4. Select a patient, enter your clinician name
+  5. Fill in a task:
+     - Trigger: "alcohol craving"
+     - Task: "Practice 4-7-8 breathing for 5 minutes"
+     - Type: Do, Difficulty: Low, Priority: 5, Addiction: alcohol
+  6. Click "Upload Tasks"
+  7. EXPECT: Success message
+
+  Terminal verification:
+  > curl "http://localhost:8000/clinician/get-tasks/{user_id}"
+
+
+  TEST 8: EXTERNAL SCHEDULING API (Terminal)
+  ────────────────────────────────
+  > curl -X POST http://localhost:8000/api/v1/external/schedule ^
+      -H "Content-Type: application/json" ^
+      -d "{\"user_id\":\"YOUR_USER_ID\",\"clinician_name\":\"Dr. Smith\",\"facility_code\":\"CLINIC001\",\"schedule_period\":\"weekly\",\"schedule_label\":\"Week 1\",\"tasks\":[{\"actionable_task\":\"Morning walk 30 min\",\"difficulty\":\"Low\",\"priority\":4,\"addiction_type\":\"alcohol\"}]}"
+  
+  EXPECT: Response confirming tasks created + audit file saved
+  VERIFY: Check "client data/" directory for new JSON audit file
+
+
+  TEST 9: CLIENT DATA AUDIT RECORDS (Terminal)
+  ────────────────────────────────
+  > curl http://localhost:8000/api/v1/client-records/YOUR_USER_ID
+  
+  For premium users: should show has_data=true with record_count > 0
+  For free-tier users: should show has_data=false, record_count=0
+  
+  Check on disk:
+  > dir "d:\desktop - March 2026\Vikartr\Addiction\client data"
+
+
+  TEST 10: ANALYTICS (Terminal)
+  ────────────────────────────────
+  > curl http://localhost:8000/analytics/top-tasks/alcohol
+  > curl http://localhost:8000/analytics/clinician-vs-general/alcohol
+  
+  EXPECT: JSON with task performance data (may be empty if no completions
+  yet for that addiction type)
+
+
+  TEST 11: GDPR DATA ERASURE (Terminal)
+  ────────────────────────────────
+  > curl -X DELETE http://localhost:8000/api/v1/client-records/YOUR_USER_ID
+  
+  EXPECT: Success message, client data directory deleted
+  VERIFY: "client data/{user_id}/" folder should be gone
+
+
+  TEST 12: DAILY CHECK-IN (Browser)
+  ────────────────────────────────
+  1. Go to patient dashboard → Check-in tab
+  2. Select a mood (e.g., "Good")
+  3. Adjust urge slider
+  4. Select triggers and coping strategies
+  5. Click "Submit Check-in"
+  6. EXPECT: +10 XP, check-in recorded, streak may increase
+
+
+  TEST 13: JOURNAL ENTRY (Browser)
+  ────────────────────────────────
+  1. Go to patient dashboard → Journal tab
+  2. Click "Shuffle" for a new prompt
+  3. Select a mood
+  4. Write a journal entry
+  5. Click "Save Entry"
+  6. EXPECT: +8 XP, entry appears in history
+
+
+  TEST 14: AI COACH (Browser)
+  ────────────────────────────────
+  1. Go to patient dashboard → Coach tab
+  2. Type: "I'm struggling with cravings right now"
+  3. Send the message
+  4. EXPECT: AI response with personalized advice
+  5. VERIFY: Session counter updates (5 per day max)
+
+
+  TEST 15: AI REPORTS (Browser)
+  ────────────────────────────────
+  Patient report:
+    1. Go to Progress tab → click "Generate AI Report"
+    2. EXPECT: Personalized report with 4 sections
+
+  Facility report:
+    1. Facility Portal → Reports tab
+    2. Select a patient → click "Generate Clinical Report"
+    3. EXPECT: Formal clinical report with 6 sections
+
+
+  TEST 16: SWAGGER API DOCS (Browser)
+  ────────────────────────────────
+  1. Open http://localhost:8000/docs
+  2. EXPECT: Full interactive Swagger UI
+  3. Click any endpoint → "Try it out" → test live
+
+
+  TEST 17: SOS CRISIS BUTTON (Browser)
+  ────────────────────────────────
+  1. On any patient screen, click the red SOS button
+  2. EXPECT: Crisis overlay with hotline numbers
+  3. Click outside or close button to dismiss
+
+
+================================================================================
+9. DATABASE & DATA FLOW
+================================================================================
+
+  PostgreSQL Tables (Neon Cloud):
+  ───────────────────────────────
+  users           — User profiles (id, name, age, dob, addictions, status, etc.)
+  task_outcomes    — Every task completion/skip with reward data (AI learning)
+  clinician_tasks — Clinician-prescribed tasks for premium users
+
+  Data Flow:
+  ───────────────────────────────
+  1. User signs up → POST /user/create → user saved to PostgreSQL
+  2. User requests tasks → GET /get-tasks → RL model selects from merged pool
+  3. User completes task → POST /complete-task → outcome saved to PostgreSQL
+     → RL model's Q-table updated → AI gets smarter
+  4. New user joins → RL model warm-starts from aggregate historical data
+  5. Clinician uploads tasks → saved to PostgreSQL → merged into task pool
+  6. External scheduler POSTs → saved to PostgreSQL + audit JSON file
+  7. AI learning log queried → reads all task_outcomes → generates report
+
+  Static Data (NEVER modified by AI):
+  ───────────────────────────────
+  output.json — The master clinical knowledge base (1195 tasks)
+  This file is READ-ONLY. The AI never writes to it.
+  All AI learning is stored in PostgreSQL (task_outcomes table).
+
+  File-Based Audit (Premium Only):
+  ───────────────────────────────
+  client data/{user_id}/  — Per-client isolated directory
+  Each update creates: {user_id}_{timestamp}.json
+  Contains: clinical notes, task schedules, audit metadata
+  Free-tier users have NO folder here.
+
+
+================================================================================
+  END OF DOCUMENTATION
+  Generated for: Recovery Compass v2.0.0
+================================================================================

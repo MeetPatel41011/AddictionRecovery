@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Recovery Compass</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+    <link rel="stylesheet" href="frontend/css/tokens.css">
+  <link rel="stylesheet" href="frontend/css/base.css">
+  <link rel="stylesheet" href="frontend/css/components.css">
+  <link rel="stylesheet" href="frontend/css/landing.css">
+  <link rel="stylesheet" href="frontend/css/onboarding.css">
+  <link rel="stylesheet" href="frontend/css/patient.css">
+  <link rel="stylesheet" href="frontend/css/coach.css">
+  <link rel="stylesheet" href="frontend/css/progress.css">
+  <link rel="stylesheet" href="frontend/css/facility.css">
+  <link rel="stylesheet" href="frontend/css/overlays.css">
+  <link rel="stylesheet" href="frontend/css/utilities.css">
+</head>
+
+<body>
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ═══════════════════════════════════════════
+     OTP VERIFICATION OVERLAY
+═══════════════════════════════════════════ -->
+  <div class="otp-overlay hidden" id="otp-overlay">
+    <div class="otp-card">
+      <span class="otp-icon">🔐</span>
+      <div class="otp-title">Verify your identity</div>
+      <div class="otp-sub" id="otp-sub">A 4-digit verification code has been generated. Please enter it below to
+        continue.</div>
+      <div class="otp-digits">
+        <input class="otp-digit" id="otp-d1" type="text" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-digit" id="otp-d2" type="text" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-digit" id="otp-d3" type="text" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-digit" id="otp-d4" type="text" maxlength="1" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="otp-error" id="otp-error"></div>
+      <button class="btn btn-green" id="otp-verify-btn" onclick="RC.verifyOTP()">Verify & Continue →</button>
+      <div class="otp-resend">Didn't see the code? <button onclick="RC.resendOTP()">Resend OTP</button></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     LANDING
+═══════════════════════════════════════════ -->
+  <div id="s-land" class="screen active">
+    <div class="land-top">
+      <div class="land-logo">🧭</div>
+      <h1>Recovery<br>Compass</h1>
+      <p>AI-powered addiction recovery — for individuals and clinical teams</p>
+    </div>
+    <div class="land-cards">
+      <div class="land-card" style="cursor:default">
+        <div class="land-card-ico lci-p">🌱</div>
+        <div class="land-card-body">
+          <h3>I'm on a recovery journey</h3>
+          <p>Personal tracker, AI coach, journals, milestones & rewards</p>
+          <div style="margin-top: 12px; display: flex; gap: 8px;">
+            <button class="btn btn-green btn-sm" onclick="RC.showPatLogin()">Login</button>
+            <button class="btn btn-ghost btn-sm" style="color: var(--g700); background: var(--g50);" onclick="RC.startPatient()">Register</button>
+          </div>
+        </div>
+      </div>
+      <div class="land-card" style="cursor:default">
+        <div class="land-card-ico lci-f">🏥</div>
+        <div class="land-card-body">
+          <h3>I'm a treatment facility</h3>
+          <p>Manage patients, assign treatment plans, AI clinical reports</p>
+          <div style="margin-top: 12px; display: flex; gap: 8px;">
+            <button class="btn btn-blue btn-sm" onclick="RC.goFacilityLogin()">Login</button>
+            <button class="btn btn-ghost btn-sm" style="color: var(--b700); background: var(--b50);" onclick="RC.showFacRegister()">Register</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     PATIENT ONBOARDING
+═══════════════════════════════════════════ -->
+  <div id="s-onboard" class="screen">
+    <div class="ob-header">
+      <button class="ob-back" id="ob-back" onclick="RC.obBack()">←</button>
+      <div class="ob-prog-wrap">
+        <div class="pbar">
+          <div class="pbar-fill" id="ob-prog" style="width:20%;background:var(--g600)"></div>
+        </div>
+      </div>
+      <span class="ob-step-lbl" id="ob-step-lbl">1 / 5</span>
+    </div>
+
+    <!-- Step 1: Profile -->
+    <div class="ob-step active" id="ob-s1">
+      <h2 class="ob-title">Tell us about yourself</h2>
+      <div class="row-2">
+        <div class="field"><label class="field-label">Username</label><input class="field-input" id="ob-name"
+            placeholder="Alex" type="text"></div>
+        <div class="field"><label class="field-label">Password</label><input class="field-input" id="ob-pass" placeholder="••••••••"
+            type="password"></div>
+      </div>
+      <div class="field" style="margin-top:-8px; margin-bottom:16px;">
+        <label class="field-label">Email or Mobile Number <span style="color:var(--danger)">*</span></label>
+        <input class="field-input" id="ob-contact" placeholder="user@email.com or 9876543210" type="text">
+      </div>
+      <div class="field">
+        <label class="field-label">Date of birth</label>
+        <input class="field-input" id="ob-dob" type="date" placeholder="YYYY-MM-DD">
+      </div>
+      <div class="field">
+        <label class="field-label">Gender (optional)</label>
+        <div class="pill-group" id="pg-gender">
+          <div class="pill" onclick="RC.pill(this,'pg-gender','gender')">Male</div>
+          <div class="pill" onclick="RC.pill(this,'pg-gender','gender')">Female</div>
+          <div class="pill" onclick="RC.pill(this,'pg-gender','gender')">Non-binary</div>
+          <div class="pill" onclick="RC.pill(this,'pg-gender','gender')">Prefer not to say</div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">What brings you here?</label>
+        <div class="pill-group" id="pg-reason">
+          <div class="pill" onclick="RC.pill(this,'pg-reason','reason')" style="font-size:14px;padding:10px 16px">Want
+            to quit on my own</div>
+          <div class="pill" onclick="RC.pill(this,'pg-reason','reason')" style="font-size:14px;padding:10px 16px">
+            Supporting my recovery plan</div>
+          <div class="pill" onclick="RC.pill(this,'pg-reason','reason')" style="font-size:14px;padding:10px 16px">My
+            clinic asked me</div>
+          <div class="pill" onclick="RC.pill(this,'pg-reason','reason')" style="font-size:14px;padding:10px 16px">Just
+            exploring</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Addictions -->
+    <div class="ob-step" id="ob-s2">
+      <h2 class="ob-title">What are you working on?</h2>
+      <p class="ob-sub">Select all that apply. Every one of these is a recognized condition — no judgment here.</p>
+      <div class="sec-label">Substance Use</div>
+      <div class="a-grid" id="ag-substance">
+        <div class="a-pill" data-id="alcohol" onclick="RC.toggleA(this)"><span class="aico">🍺</span>Alcohol</div>
+        <div class="a-pill" data-id="opioids" onclick="RC.toggleA(this)"><span class="aico">💊</span>Opioids</div>
+        <div class="a-pill" data-id="cannabis" onclick="RC.toggleA(this)"><span class="aico">🌿</span>Cannabis</div>
+        <div class="a-pill" data-id="nicotine" onclick="RC.toggleA(this)"><span class="aico">🚬</span>Nicotine / Vaping
+        </div>
+        <div class="a-pill" data-id="stimulants" onclick="RC.toggleA(this)"><span class="aico">⚡</span>Stimulants</div>
+        <div class="a-pill" data-id="benzos" onclick="RC.toggleA(this)"><span class="aico">😴</span>Benzos / Sedatives
+        </div>
+        <div class="a-pill" data-id="hallucinogens" onclick="RC.toggleA(this)"><span class="aico">🌀</span>Hallucinogens
+        </div>
+        <div class="a-pill" data-id="inhalants" onclick="RC.toggleA(this)"><span class="aico">💨</span>Inhalants</div>
+      </div>
+      <div class="sec-label" style="margin-top:18px">Behavioral</div>
+      <div class="a-grid" id="ag-behavioral">
+        <div class="a-pill" data-id="gambling" onclick="RC.toggleA(this)"><span class="aico">🎰</span>Gambling</div>
+        <div class="a-pill" data-id="gaming" onclick="RC.toggleA(this)"><span class="aico">🎮</span>Gaming</div>
+        <div class="a-pill" data-id="shopping" onclick="RC.toggleA(this)"><span class="aico">🛍️</span>Shopping</div>
+        <div class="a-pill" data-id="food" onclick="RC.toggleA(this)"><span class="aico">🍔</span>Food / Binge Eating
+        </div>
+        <div class="a-pill" data-id="sex" onclick="RC.toggleA(this)"><span class="aico">🔞</span>Sex / Pornography</div>
+        <div class="a-pill" data-id="social_media" onclick="RC.toggleA(this)"><span class="aico">📱</span>Social Media
+        </div>
+        <div class="a-pill" data-id="exercise" onclick="RC.toggleA(this)"><span class="aico">🏋️</span>Compulsive
+          Exercise</div>
+        <div class="a-pill" data-id="other" onclick="RC.toggleA(this)"><span class="aico">➕</span>Other</div>
+      </div>
+    </div>
+
+    <!-- Step 3: Assessment -->
+    <div class="ob-step" id="ob-s3">
+      <h2 class="ob-title">Quick assessment</h2>
+      <p class="ob-sub">Six private questions that power your AI coach and track your progress over time.</p>
+      <div class="q-block">
+        <div class="q-title">How severe are your cravings or withdrawal symptoms on a typical day?</div>
+        <div class="slider-row">
+          <input type="range" id="q-wd" min="1" max="10" value="5"
+            oninput="document.getElementById('q-wd-v').textContent=this.value">
+          <span class="slider-val" id="q-wd-v">5</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-faint);margin-top:4px">
+          <span>Minimal</span><span>Overwhelming</span></div>
+      </div>
+      <div class="q-block">
+        <div class="q-title">How much does your addiction affect your daily life?</div>
+        <div class="radio-list">
+          <label class="radio-item" onclick="RC.radio(this,'q-impact')"><input type="radio" name="q-impact"
+              value="mild"><span>Mildly — I mostly function normally</span></label>
+          <label class="radio-item" onclick="RC.radio(this,'q-impact')"><input type="radio" name="q-impact"
+              value="moderate"><span>Moderately — It causes real problems</span></label>
+          <label class="radio-item" onclick="RC.radio(this,'q-impact')"><input type="radio" name="q-impact"
+              value="severe"><span>Severely — It's disrupting my life</span></label>
+        </div>
+      </div>
+      <div class="q-block">
+        <div class="q-title">Do you experience depression, anxiety, or trauma alongside your addiction?</div>
+        <div class="radio-list">
+          <label class="radio-item" onclick="RC.radio(this,'q-mental')"><input type="radio" name="q-mental"
+              value="rarely"><span>Rarely or not at all</span></label>
+          <label class="radio-item" onclick="RC.radio(this,'q-mental')"><input type="radio" name="q-mental"
+              value="sometimes"><span>Sometimes</span></label>
+          <label class="radio-item" onclick="RC.radio(this,'q-mental')"><input type="radio" name="q-mental"
+              value="often"><span>Often — it's significant</span></label>
+        </div>
+      </div>
+      <div class="q-block">
+        <div class="q-title">How many times have you tried to quit or cut back before?</div>
+        <div class="radio-list">
+          <label class="radio-item" onclick="RC.radio(this,'q-att')"><input type="radio" name="q-att"
+              value="0"><span>This is my first attempt</span></label>
+          <label class="radio-item" onclick="RC.radio(this,'q-att')"><input type="radio" name="q-att"
+              value="1-2"><span>1–2 times</span></label>
+          <label class="radio-item" onclick="RC.radio(this,'q-att')"><input type="radio" name="q-att" value="3+"><span>3
+              or more times</span></label>
+        </div>
+      </div>
+      <div class="q-block">
+        <div class="q-title">How supportive is your home and social environment?</div>
+        <div class="radio-list">
+          <label class="radio-item" onclick="RC.radio(this,'q-sup')"><input type="radio" name="q-sup"
+              value="unsupportive"><span>Not supportive — people around me still use</span></label>
+          <label class="radio-item" onclick="RC.radio(this,'q-sup')"><input type="radio" name="q-sup"
+              value="neutral"><span>Neutral — they don't interfere</span></label>
+          <label class="radio-item" onclick="RC.radio(this,'q-sup')"><input type="radio" name="q-sup"
+              value="supportive"><span>Supportive — they actively help</span></label>
+        </div>
+      </div>
+      <div class="q-block">
+        <div class="q-title">How motivated are you to change right now?</div>
+        <div class="slider-row">
+          <input type="range" id="q-mot" min="1" max="10" value="7"
+            oninput="document.getElementById('q-mot-v').textContent=this.value">
+          <span class="slider-val" id="q-mot-v">7</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-faint);margin-top:4px">
+          <span>Barely thinking about it</span><span>Fully committed</span></div>
+      </div>
+    </div>
+
+    <!-- Step 4: Goals -->
+    <div class="ob-step" id="ob-s4">
+      <h2 class="ob-title">Set your intention</h2>
+      <p class="ob-sub">Clear goals dramatically improve recovery outcomes. Let's get specific about yours.</p>
+      <div class="field">
+        <label class="field-label">Primary goal</label>
+        <div class="radio-list">
+          <label class="radio-item" onclick="RC.radio(this,'q-goal')"><input type="radio" name="q-goal"
+              value="abstinence"><span>Complete abstinence — quit entirely</span></label>
+          <label class="radio-item" onclick="RC.radio(this,'q-goal')"><input type="radio" name="q-goal"
+              value="reduce"><span>Reduce use significantly</span></label>
+          <label class="radio-item" onclick="RC.radio(this,'q-goal')"><input type="radio" name="q-goal"
+              value="control"><span>Gain control over my use</span></label>
+        </div>
+      </div>
+      <div class="field mt-16">
+        <label class="field-label">Your personal why (optional but powerful)</label>
+        <textarea class="field-input" id="ob-why" placeholder="I want to recover because..." rows="4"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">Facility / clinic code (optional)</label>
+        <input class="field-input" id="ob-code" placeholder="e.g. CLINIC001"
+          style="text-transform:uppercase;letter-spacing:1px" type="text">
+      </div>
+      <p class="fs-13 c-muted" style="margin-top:-8px">Enter the code your clinic gave you to link your recovery data to
+        their portal.</p>
+    </div>
+
+    <!-- Step 5: Notifications -->
+    <div class="ob-step" id="ob-s5">
+      <h2 class="ob-title">Stay on track</h2>
+      <p class="ob-sub">Consistent reminders are one of the strongest predictors of recovery success.</p>
+      <div class="card mb-12">
+        <div style="font-size:36px;margin-bottom:10px">🌅</div>
+        <div class="fw-600 mb-8" style="font-size:16px">Morning intention</div>
+        <p class="fs-13 c-muted mb-16">Start each day with a check-in and clear purpose</p>
+        <div class="row-2" style="align-items:end">
+          <div class="field" style="margin:0"><label class="field-label">Time</label><input class="field-input"
+              type="time" id="n-morn" value="08:00"></div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding-bottom:12px"><input
+              type="checkbox" id="n-morn-on" checked style="accent-color:var(--g700);width:18px;height:18px"><span
+              class="fs-14">Enable</span></label>
+        </div>
+      </div>
+      <div class="card mb-12">
+        <div style="font-size:36px;margin-bottom:10px">🌙</div>
+        <div class="fw-600 mb-8" style="font-size:16px">Evening reflection</div>
+        <p class="fs-13 c-muted mb-16">End each day with gratitude and journaling</p>
+        <div class="row-2" style="align-items:end">
+          <div class="field" style="margin:0"><label class="field-label">Time</label><input class="field-input"
+              type="time" id="n-eve" value="20:00"></div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding-bottom:12px"><input
+              type="checkbox" id="n-eve-on" checked style="accent-color:var(--g700);width:18px;height:18px"><span
+              class="fs-14">Enable</span></label>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:36px;margin-bottom:10px">🆘</div>
+        <div class="fw-600 mb-8" style="font-size:16px">Crisis SOS button</div>
+        <p class="fs-13 c-muted">The red 🆘 button is always accessible on every screen — tap it any time you need
+          immediate support, crisis hotlines, or an urge intervention.</p>
+      </div>
+    </div>
+
+    <div class="ob-footer">
+      <button class="btn btn-green" id="ob-next" onclick="RC.obNext()">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     PATIENT APP
+═══════════════════════════════════════════ -->
+  <div id="s-patient" class="screen">
+    <div class="app-bar">
+      <div class="app-bar-left">
+        <h2 id="p-greet">Good morning</h2>
+        <p id="p-date"></p>
+      </div>
+      <button class="sos-btn" onclick="RC.showSOS()" title="Crisis Support">🆘</button>
+    </div>
+
+    <!-- HOME -->
+    <div class="tab-pane active" id="tp-home">
+      <div class="streak-card card-green" id="streak-card">
+        <div class="streak-top">
+          <div class="ring-wrap">
+            <svg viewBox="0 0 88 88">
+              <circle class="ring-bg" cx="44" cy="44" r="38" />
+              <circle class="ring-fg" id="ring-fg" cx="44" cy="44" r="38" stroke-dasharray="238.76"
+                stroke-dashoffset="238.76" />
+            </svg>
+            <div class="ring-inner"><span class="ring-num" id="ring-num">0</span><span class="ring-lbl">days</span>
+            </div>
+          </div>
+          <div class="streak-info">
+            <div class="streak-title" id="streak-title">Day One</div>
+            <div class="streak-sub" id="streak-sub">Your journey starts now</div>
+            <div class="streak-next" id="streak-next"></div>
+          </div>
+        </div>
+        <div class="xp-row"><span class="xp-level" id="xp-level">Seedling 🌱</span><span class="xp-pts" id="xp-pts">0
+            XP</span></div>
+        <div class="xp-bar">
+          <div class="xp-fill" id="xp-fill" style="width:0%"></div>
+        </div>
+      </div>
+      <div id="home-alerts"></div>
+      <div class="quote-card">
+        <div class="quote-text" id="home-quote">Loading...</div>
+      </div>
+      <div class="home-sec-title">Today's tasks</div>
+      <div id="avoid-warnings"></div>
+      <div class="task-list-card" id="task-list"></div>
+      <div class="stat-grid">
+        <div class="stat-cell">
+          <div class="stat-num" id="st-ci">0</div>
+          <div class="stat-lbl">Check-ins</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="st-jn">0</div>
+          <div class="stat-lbl">Journal entries</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="st-bd">0</div>
+          <div class="stat-lbl">Badges earned</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="st-ls">0</div>
+          <div class="stat-lbl">Longest streak</div>
+        </div>
+      </div>
+      <div id="tp-home-plan" class="hidden"></div>
+    </div>
+
+    <!-- CHECK-IN -->
+    <div class="tab-pane" id="tp-checkin">
+      <div id="ci-done-card" class="streak-card card-green hidden">
+        <div class="ci-done-icon">✅</div>
+        <div class="ci-done-title">Check-in complete!</div>
+        <div class="ci-done-sub">You earned +10 XP. Keep the streak alive.</div>
+      </div>
+      <div id="ci-form">
+        <div style="margin-bottom:20px">
+          <h3 style="font-family:'Lora',serif;font-size:22px;color:var(--g800);margin-bottom:4px">Daily Check-in</h3>
+          <p class="fs-13 c-muted" id="ci-date-lbl"></p>
+        </div>
+        <div class="card mb-12">
+          <div class="ci-section-title">How are you feeling right now?</div>
+          <div class="mood-grid">
+            <button class="mood-btn" data-m="great" onclick="RC.moodCI(this)"><span class="memo">😊</span><span
+                class="mlbl">Great</span></button>
+            <button class="mood-btn" data-m="good" onclick="RC.moodCI(this)"><span class="memo">🙂</span><span
+                class="mlbl">Good</span></button>
+            <button class="mood-btn" data-m="ok" onclick="RC.moodCI(this)"><span class="memo">😐</span><span
+                class="mlbl">Okay</span></button>
+            <button class="mood-btn" data-m="hard" onclick="RC.moodCI(this)"><span class="memo">😔</span><span
+                class="mlbl">Hard</span></button>
+            <button class="mood-btn" data-m="crisis" onclick="RC.moodCI(this)"><span class="memo">😰</span><span
+                class="mlbl">Crisis</span></button>
+          </div>
+        </div>
+        <div class="card mb-12">
+          <div class="ci-section-title">Urge intensity right now</div>
+          <div class="slider-row">
+            <input type="range" id="urge-sl" min="0" max="10" value="3" oninput="RC.urgeUpdate()">
+            <span class="slider-val" id="urge-val">3</span>
+          </div>
+          <div class="urge-readout"><span class="urge-num" id="urge-big">3</span><span class="urge-desc"
+              id="urge-desc">Low urge</span></div>
+        </div>
+        <div class="card mb-12">
+          <div class="ci-section-title">Triggers today (select all that apply)</div>
+          <div class="pill-group" id="trigger-chips">
+            <div class="chip" onclick="RC.toggleChip(this,'t')">Stress / Work</div>
+            <div class="chip" onclick="RC.toggleChip(this,'t')">Social pressure</div>
+            <div class="chip" onclick="RC.toggleChip(this,'t')">Loneliness</div>
+            <div class="chip" onclick="RC.toggleChip(this,'t')">Boredom</div>
+            <div class="chip" onclick="RC.toggleChip(this,'t')">Anxiety</div>
+            <div class="chip" onclick="RC.toggleChip(this,'t')">Depression</div>
+            <div class="chip" onclick="RC.toggleChip(this,'t')">Physical pain</div>
+            <div class="chip" onclick="RC.toggleChip(this,'t')">Celebration</div>
+            <div class="chip" onclick="RC.toggleChip(this,'t')">Specific location</div>
+            <div class="chip" onclick="RC.toggleChip(this,'t')">Specific person</div>
+          </div>
+        </div>
+        <div class="card mb-12">
+          <div class="ci-section-title">Coping strategies used today</div>
+          <div class="pill-group" id="coping-chips">
+            <div class="chip" onclick="RC.toggleChip(this,'c')">Deep breathing</div>
+            <div class="chip" onclick="RC.toggleChip(this,'c')">Exercise</div>
+            <div class="chip" onclick="RC.toggleChip(this,'c')">Called someone</div>
+            <div class="chip" onclick="RC.toggleChip(this,'c')">Meditation</div>
+            <div class="chip" onclick="RC.toggleChip(this,'c')">Journaling</div>
+            <div class="chip" onclick="RC.toggleChip(this,'c')">Distraction</div>
+            <div class="chip" onclick="RC.toggleChip(this,'c')">AA / NA meeting</div>
+            <div class="chip" onclick="RC.toggleChip(this,'c')">Urge surfing</div>
+          </div>
+        </div>
+        <div class="card mb-16">
+          <div class="ci-section-title">Quick note (optional)</div>
+          <textarea class="field-input" id="ci-note" placeholder="Anything you want to remember about today..."
+            rows="3"></textarea>
+        </div>
+        <button class="btn btn-green btn-round" onclick="RC.saveCI()">Save Check-in +10 XP</button>
+      </div>
+    </div>
+
+    <!-- JOURNAL -->
+    <div class="tab-pane" id="tp-journal">
+      <div class="journal-prompt-card card-green" id="journal-prompt-card">
+        <div class="jp-label">Today's reflection prompt</div>
+        <div class="jp-text" id="jp-text">Loading...</div>
+        <button class="jp-shuffle" onclick="RC.shufflePrompt()">↻ New prompt</button>
+      </div>
+      <div class="card mb-16">
+        <div class="ci-section-title mb-12">How are you feeling?</div>
+        <div class="mood-grid">
+          <button class="mood-btn" data-m="great" onclick="RC.moodJ(this)"><span class="memo">😊</span><span
+              class="mlbl">Great</span></button>
+          <button class="mood-btn" data-m="good" onclick="RC.moodJ(this)"><span class="memo">🙂</span><span
+              class="mlbl">Good</span></button>
+          <button class="mood-btn" data-m="ok" onclick="RC.moodJ(this)"><span class="memo">😐</span><span
+              class="mlbl">Okay</span></button>
+          <button class="mood-btn" data-m="hard" onclick="RC.moodJ(this)"><span class="memo">😔</span><span
+              class="mlbl">Hard</span></button>
+          <button class="mood-btn" data-m="crisis" onclick="RC.moodJ(this)"><span class="memo">😰</span><span
+              class="mlbl">Crisis</span></button>
+        </div>
+        <textarea class="field-input mt-12" id="j-text" placeholder="Write freely — this is your private space..."
+          rows="8"></textarea>
+        <button class="btn btn-green btn-round mt-12" onclick="RC.saveJournal()">Save Entry +15 XP</button>
+      </div>
+      <div class="home-sec-title">Past entries</div>
+      <div id="journal-list"></div>
+    </div>
+
+    <!-- COACH -->
+    <div class="tab-pane" id="tp-coach">
+      <div class="coach-hero card-blue">
+        <div class="coach-ava">🤖</div>
+        <div class="coach-name">Your Recovery Coach</div>
+        <div class="coach-desc">CBT · MET · Urge Surfing · Personalized to your data</div>
+      </div>
+      <div class="coach-limit" id="coach-limit">5 sessions remaining today</div>
+      <div class="chat-shell">
+        <div class="chat-messages" id="chat-msgs"></div>
+        <div class="chat-bottom">
+          <textarea class="chat-input" id="chat-input" placeholder="How are you doing? What's on your mind?"
+            rows="1"></textarea>
+          <button class="chat-send" id="chat-send" onclick="RC.sendChat()">↑</button>
+        </div>
+      </div>
+      <div class="card-sm mb-12">
+        <div class="fs-13 fw-600 c-muted mb-8">Quick prompts</div>
+        <div class="quick-prompts">
+          <div class="chip" onclick="RC.quickChat('I\'m feeling a strong urge right now. Help me get through it.')">🆘
+            Urge help</div>
+          <div class="chip" onclick="RC.quickChat('Walk me through a breathing exercise.')">🫁 Breathe</div>
+          <div class="chip" onclick="RC.quickChat('I relapsed. I need help processing what happened.')">💔 I relapsed
+          </div>
+          <div class="chip" onclick="RC.quickChat('What does my recent progress look like?')">📊 My progress</div>
+          <div class="chip" onclick="RC.quickChat('Give me some motivation and encouragement for today.')">✨ Motivate me
+          </div>
+          <div class="chip" onclick="RC.quickChat('Help me identify what triggered my cravings lately.')">🔍 My triggers
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="tab-pane" id="tp-progress">
+      <div class="period-tabs">
+        <button class="ptab active" onclick="RC.setPeriod('week',this)">7 days</button>
+        <button class="ptab" onclick="RC.setPeriod('month',this)">30 days</button>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Mood trend</div>
+        <canvas id="mood-chart" height="130"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Urge intensity</div>
+        <canvas id="urge-chart" height="110"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Coping strategies used</div>
+        <canvas id="coping-chart" height="160"></canvas>
+      </div>
+      <div class="home-sec-title mt-16">Badges & milestones</div>
+      <div class="badge-grid" id="badge-grid"></div>
+      <button class="btn btn-ghost mt-16" onclick="RC.genPatientReport()">📄 Generate AI progress report</button>
+      <div class="ai-report-area" id="patient-report"></div>
+    </div>
+
+    <!-- MY CARE (from hospital) -->
+    <div class="tab-pane" id="tp-mycare">
+      <div style="margin-bottom:20px">
+        <h3 style="font-family:'Lora',serif;font-size:22px;color:var(--b800);margin-bottom:4px">🏥 My Care</h3>
+        <p class="fs-13 c-muted" id="mycare-facility-label">Loading care information...</p>
+      </div>
+      <div id="mycare-content">
+        <div style="padding:24px;text-align:center;color:var(--text-muted)">
+          <div style="font-size:40px;margin-bottom:12px">🔄</div>
+          <p>Loading your care information...</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="app-nav">
+      <button class="nav-btn active" onclick="RC.tab('home',this)"><span class="nico">🏠</span>Home</button>
+      <button class="nav-btn" onclick="RC.tab('checkin',this)"><span class="nico">✅</span>Check-in</button>
+      <button class="nav-btn" onclick="RC.tab('journal',this)"><span class="nico">📓</span>Journal</button>
+      <button class="nav-btn" onclick="RC.tab('coach',this)"><span class="nico">🤖</span>Coach</button>
+      <button class="nav-btn" onclick="RC.tab('progress',this)"><span class="nico">📊</span>Progress</button>
+      <button class="nav-btn" onclick="RC.tab('mycare',this)"><span class="nico">🏥</span>My Care</button>
+    </nav>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     FACILITY LOGIN
+═══════════════════════════════════════════ -->
+  <div id="s-fac-login" class="screen">
+    <div class="fac-login-inner">
+      <div class="fac-logo">🏥</div>
+      <h1 style="font-family:'Lora',serif">Clinic Portal</h1>
+      <p>Sign in to manage your patients and generate reports</p>
+      <div class="fac-login-card">
+        <div class="field"><label class="field-label">Access code</label><input class="field-input" id="fac-code-in"
+            placeholder="CLINIC001" style="text-transform:uppercase;letter-spacing:2px;font-size:18px" type="text">
+        </div>
+        <div class="field"><label class="field-label">Password</label><input class="field-input" id="fac-pass-in"
+            placeholder="••••••••" type="password"></div>
+        <button class="btn btn-blue" onclick="RC.facilityLogin()">Sign In to Portal →</button>
+        <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text-muted)">Don't have an account? <span
+            style="color:var(--b600);cursor:pointer;font-weight:600" onclick="RC.showFacRegister()">Register clinic</span>
+        </p>
+      </div>
+      <button class="fac-back" onclick="RC.show('s-land')">← Back to home</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     FACILITY REGISTER
+═══════════════════════════════════════════ -->
+  <div id="s-fac-register" class="screen">
+    <div class="fac-login-inner">
+      <div class="fac-logo">🏥</div>
+      <h1 style="font-family:'Lora',serif">Register Clinic</h1>
+      <p>Create a portal to manage your patients and generate AI clinical reports</p>
+      <div class="fac-login-card" id="fac-reg-form">
+        <div class="field"><label class="field-label">Facility name</label><input class="field-input" id="fac-reg-name"
+            placeholder="Sunrise Recovery Center" type="text"></div>
+        <div class="field"><label class="field-label">Password</label><input class="field-input" id="fac-reg-pass"
+            placeholder="••••••••" type="password"></div>
+        <button class="btn btn-blue" onclick="RC.facilityRegister()">Register Facility →</button>
+      </div>
+      <div class="fac-login-card hidden" id="fac-reg-success">
+        <div style="font-size:40px;text-align:center;margin-bottom:10px">✅</div>
+        <h3 style="text-align:center;margin-bottom:8px">Registration Successful</h3>
+        <p style="text-align:center;font-size:14px;color:var(--text-mid);margin-bottom:16px">Share this code with your patients during their onboarding.</p>
+        <div style="background:var(--b50);color:var(--b700);font-weight:700;font-size:24px;text-align:center;padding:16px;border-radius:8px;letter-spacing:2px;margin-bottom:16px" id="new-fac-code"></div>
+        <button class="btn btn-blue" onclick="RC.goFacilityLogin()">Go to Login</button>
+      </div>
+      <p class="fac-hint">Recovery Compass Clinic — $99/month per 10 patients</p>
+      <button class="fac-back" onclick="RC.show('s-land')">← Back to home</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     PATIENT LOGIN
+═══════════════════════════════════════════ -->
+  <div id="s-pat-login" class="screen">
+    <div class="pending-inner" style="max-width: 400px; margin: 0 auto;">
+      <div class="land-logo" style="font-size: 48px; margin-bottom: 16px;">🧭</div>
+      <h1 style="font-family:'Lora',serif; font-size:28px;">Welcome Back</h1>
+      <p style="color:var(--text-mid); margin-bottom: 24px;">Log in to continue your recovery journey.</p>
+      <div class="card" style="text-align:left; margin-bottom:24px;">
+        <div class="field"><label class="field-label">Email or Mobile Number</label><input class="field-input" id="pat-login-contact"
+            placeholder="user@email.com or 9876543210" type="text"></div>
+        <div class="field"><label class="field-label">Password</label><input class="field-input" id="pat-login-pass"
+            placeholder="••••••••" type="password"></div>
+        <button class="btn btn-green" onclick="RC.patientLogin()">Login →</button>
+      </div>
+      <button class="fac-back" onclick="RC.show('s-land')">← Back to home</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     PENDING APPROVAL SCREEN
+═══════════════════════════════════════════ -->
+  <div id="s-pending" class="screen">
+    <div class="pending-inner">
+      <div class="pending-pulse">⏳</div>
+      <h1>Waiting for<br>Facility Approval</h1>
+      <p class="pending-msg">Your clinic has been notified. Once they review and approve your account, you'll be
+        redirected automatically.</p>
+      <div class="pending-status-card">
+        <div class="pending-status-row"><span class="psr-label">Name</span><span class="psr-value"
+            id="pending-name">—</span></div>
+        <div class="pending-status-row"><span class="psr-label">Facility</span><span class="psr-value"
+            id="pending-facility">—</span></div>
+        <div class="pending-status-row"><span class="psr-label">Status</span><span class="psr-badge psr-pending"
+            id="pending-badge">⏳ Pending</span></div>
+      </div>
+      <button class="pending-check-btn" id="pending-check-btn" onclick="RC.checkApprovalStatus()">🔄 Check
+        Status</button>
+      <button class="pending-back" onclick="RC.show('s-land')">← Back to home</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     FACILITY APP
+═══════════════════════════════════════════ -->
+  <div id="s-fac-app" class="screen">
+    <div class="fac-bar">
+      <div>
+        <h2>Recovery Compass</h2>
+        <div class="fac-bar-sub" id="fac-bar-sub">Clinic Portal</div>
+      </div>
+      <button class="fac-signout" onclick="RC.show('s-land')">Sign out</button>
+    </div>
+
+    <!-- PATIENTS TAB -->
+    <div class="ftab active" id="ft-patients">
+      <div id="fac-alerts"></div>
+      <div class="flex items-center justify-between mb-12">
+        <div style="font-size:18px;font-weight:700">Patients <span id="pt-count"
+            style="font-size:14px;color:var(--text-muted);font-weight:400"></span></div>
+        <button class="btn btn-blue btn-sm" onclick="RC.showAddPatient()">+ Add Patient</button>
+      </div>
+      <div class="search-wrap">
+        <span class="search-ico">🔍</span>
+        <input type="text" placeholder="Search patients..." id="pt-search" oninput="RC.filterPts()">
+      </div>
+      <div id="pt-list"></div>
+    </div>
+
+    <!-- PATIENT DETAIL TAB -->
+    <div class="ftab" id="ft-detail">
+      <div id="pt-detail-content">
+        <div class="empty-state">
+          <div class="empty-ico">👤</div>
+          <h3>No patient selected</h3>
+          <p>Select a patient from the Patients tab to view their full profile.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TREATMENT PLAN TAB -->
+    <div class="ftab" id="ft-treatment">
+      <div class="field mb-16">
+        <label class="field-label">Select patient</label>
+        <select class="field-input" id="tp-sel" onchange="RC.loadTP()" style="border-color:var(--b200)">
+          <option value="">— Choose a patient —</option>
+        </select>
+      </div>
+      <div id="tp-form"></div>
+    </div>
+
+    <!-- CLINICAL TASKS TAB -->
+    <div class="ftab" id="ft-clinical">
+      <div class="home-sec-title mt-16">Upload Clinician Tasks (JSON)</div>
+      <div class="card">
+        <div class="field"><label class="field-label">Select patient for task upload</label>
+          <select class="field-input" id="clin-upload-sel" style="border-color:var(--b200)">
+            <option value="">-- Choose a patient --</option>
+          </select>
+        </div>
+        <div class="field"><label class="field-label">Clinician name</label><input class="field-input" id="clin-name"
+            placeholder="Dr. Smith" type="text"></div>
+        <div id="clin-task-rows">
+          <div class="clin-task-entry card-sm mb-8" style="padding:12px">
+            <div class="row-2 mb-8">
+              <div class="field" style="margin:0"><label class="field-label">Condition / Trigger</label><input
+                  class="field-input clin-trigger" placeholder="e.g. craving for alcohol"></div>
+              <div class="field" style="margin:0"><label class="field-label">Task type</label><select
+                  class="field-input clin-type">
+                  <option value="do">Do (action)</option>
+                  <option value="avoid">Avoid (warning)</option>
+                </select></div>
+            </div>
+            <div class="field mb-8"><label class="field-label">Actionable task</label><input
+                class="field-input clin-action" placeholder="e.g. Call sponsor immediately"></div>
+            <div class="row-3">
+              <div class="field" style="margin:0"><label class="field-label">Difficulty</label><select
+                  class="field-input clin-diff">
+                  <option>Low</option>
+                  <option selected>Medium</option>
+                  <option>High</option>
+                </select></div>
+              <div class="field" style="margin:0"><label class="field-label">Priority (1-5)</label><input
+                  class="field-input clin-priority" type="number" min="1" max="5" value="3"></div>
+              <div class="field" style="margin:0"><label class="field-label">Addiction</label><input
+                  class="field-input clin-addiction" placeholder="alcohol"></div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm mt-8 mb-12" onclick="RC.addClinicianRow()">+ Add another task</button>
+        <button class="btn btn-blue" onclick="RC.uploadClinicianTasks()">Upload Clinician Tasks</button>
+        <div id="clin-upload-result" class="mt-12"></div>
+      </div>
+    </div>
+
+    <!-- APPROVALS TAB -->
+    <div class="ftab" id="ft-approvals">
+      <div class="flex items-center justify-between mb-12">
+        <div style="font-size:18px;font-weight:700">Pending Approvals <span id="approval-count"
+            class="approval-count-badge hidden">0</span></div>
+        <button class="btn btn-blue btn-sm" onclick="RC.loadPendingUsers()">🔄 Refresh</button>
+      </div>
+      <p class="fs-13 c-muted mb-16">New patients who signed up with your facility code will appear here for review.
+        Approve them to grant app access.</p>
+      <div id="approval-list"></div>
+    </div>
+
+    <!-- REPORTS TAB -->
+    <div class="ftab" id="ft-reports">
+      <div class="field mb-12">
+        <label class="field-label">Generate report for</label>
+        <select class="field-input" id="rep-sel" onchange="RC.loadRepPt()" style="border-color:var(--b200)">
+          <option value="">— Select patient —</option>
+        </select>
+      </div>
+      <div id="rep-preview"></div>
+      <button class="btn btn-blue" id="gen-rep-btn" onclick="RC.genFacReport()">🤖 Generate AI Clinical Report</button>
+      <div id="fac-report-area" class="mt-16"></div>
+    </div>
+
+    <nav class="fac-nav">
+      <button class="fac-nav-btn active" onclick="RC.facTab('patients',this)"><span
+          class="fnico">👥</span>Patients</button>
+      <button class="fac-nav-btn" onclick="RC.facTab('detail',this)"><span class="fnico">📋</span>Detail</button>
+      <button class="fac-nav-btn" onclick="RC.facTab('treatment',this)"><span class="fnico">📝</span>Treatment Plan</button>
+      <button class="fac-nav-btn" onclick="RC.facTab('clinical',this)"><span class="fnico">🎯</span>Clinical Tasks</button>
+      <button class="fac-nav-btn" onclick="RC.facTab('approvals',this)"><span class="fnico">✅</span>Approvals<span
+          id="nav-approval-badge" class="approval-count-badge hidden"
+          style="font-size:9px;min-width:16px;height:16px;margin-left:3px">0</span></button>
+      <button class="fac-nav-btn" onclick="RC.facTab('reports',this)"><span class="fnico">📄</span>Reports</button>
+    </nav>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+     OVERLAYS
+═══════════════════════════════════════════ -->
+  <!-- SOS -->
+  <div class="overlay hidden" id="sos-overlay" onclick="if(event.target===this)RC.hideSOS()">
+    <div class="sos-sheet">
+      <div class="sos-header">
+        <div class="sos-icon">🆘</div>
+        <div class="sos-title">Crisis Support</div>
+        <div class="sos-sub">You are not alone. These services are free, confidential, and available 24/7.</div>
+      </div>
+      <div class="sos-contact">
+        <h4>📞 988 Suicide & Crisis Lifeline</h4>
+        <p>Call or text <strong>988</strong> — Immediate support for mental health & substance crises</p>
+      </div>
+      <div class="sos-contact">
+        <h4>💬 SAMHSA National Helpline</h4>
+        <p>Call <strong>1-800-662-4357</strong> — Free treatment referrals and information</p>
+      </div>
+      <div class="sos-contact">
+        <h4>📱 Crisis Text Line</h4>
+        <p>Text <strong>HOME</strong> to <strong>741741</strong> — Text-based crisis support</p>
+      </div>
+      <div class="sos-contact">
+        <h4>🌊 Urge Surfing Reminder</h4>
+        <p>Urges peak then pass — typically within 15–30 minutes. Breathe slowly. Notice it without acting on it. You've
+          done this before.</p>
+      </div>
+      <button class="btn btn-green mt-16" onclick="RC.hideSOS()">I'm okay, close this</button>
+    </div>
+  </div>
+  <!-- Generic sheet modal -->
+  <div class="overlay hidden" id="modal-overlay" onclick="if(event.target===this)RC.hideModal()">
+    <div class="sheet">
+      <div class="sheet-title" id="modal-title">Modal</div>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+  <!-- Journal entry viewer -->
+  <div class="overlay hidden" id="j-overlay" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="sheet">
+      <div id="j-overlay-content"></div>
+      <button class="btn btn-ghost mt-16"
+        onclick="document.getElementById('j-overlay').classList.add('hidden')">Close</button>
+    </div>
+  </div>
+
+  <script type="module" src="frontend/js/app.js"></script>
+  </body>
+
+</html>

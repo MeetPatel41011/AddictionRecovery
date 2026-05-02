@@ -1,0 +1,77 @@
+/* ═══════════════════════════════════════════
+   OTP VERIFICATION MODAL
+═══════════════════════════════════════════ */
+.otp-overlay{position:fixed;inset:0;background:rgba(13,46,32,.85);backdrop-filter:blur(12px);z-index:9000;display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease both}
+.otp-card{background:var(--surface);border-radius:24px;padding:36px 28px;width:90%;max-width:380px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.35);animation:badgePop .4s cubic-bezier(.4,0,.2,1) both}
+.otp-icon{font-size:52px;margin-bottom:16px;display:block}
+.otp-title{font-family:'Lora',serif;font-size:22px;font-weight:600;color:var(--g800);margin-bottom:6px}
+.otp-sub{font-size:14px;color:var(--text-muted);line-height:1.6;margin-bottom:24px;max-width:280px;margin-left:auto;margin-right:auto}
+.otp-digits{display:flex;gap:12px;justify-content:center;margin-bottom:24px}
+.otp-digit{width:56px;height:64px;border:2.5px solid var(--border-strong);border-radius:var(--r14,var(--r12));font-family:'Lora',serif;font-size:28px;font-weight:600;text-align:center;color:var(--g800);background:var(--bg);transition:all .2s;caret-color:var(--g600)}
+.otp-digit:focus{border-color:var(--g500);box-shadow:0 0 0 4px rgba(61,143,110,.15);background:var(--surface)}
+.otp-digit.error{border-color:var(--r500);box-shadow:0 0 0 4px rgba(201,79,59,.12);animation:shake .4s ease}
+.otp-digit.success{border-color:var(--g500);background:var(--g50)}
+.otp-error{font-size:13px;color:var(--r500);font-weight:600;margin-bottom:12px;min-height:20px}
+.otp-resend{font-size:13px;color:var(--text-muted);margin-top:12px}
+.otp-resend button{color:var(--g700);font-weight:600;text-decoration:underline;cursor:pointer;background:none;border:none;font-size:13px}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+/* ═══════════════════════════════════════════
+   PENDING APPROVAL SCREEN
+═══════════════════════════════════════════ */
+#s-pending{background:linear-gradient(160deg,var(--g800) 0%,var(--b700) 100%);justify-content:center;align-items:center;position:relative;overflow:hidden}
+#s-pending::before{content:'';position:absolute;top:50%;left:50%;width:500px;height:500px;background:radial-gradient(circle,rgba(255,255,255,.04),transparent 70%);transform:translate(-50%,-50%);pointer-events:none}
+.pending-inner{padding:40px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0;position:relative;z-index:1}
+.pending-pulse{width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:44px;margin-bottom:28px;position:relative}
+.pending-pulse::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:2px solid rgba(255,255,255,.2);animation:pendingRing 2.5s cubic-bezier(.4,0,.6,1) infinite}
+.pending-pulse::after{content:'';position:absolute;inset:-20px;border-radius:50%;border:1.5px solid rgba(255,255,255,.08);animation:pendingRing 2.5s cubic-bezier(.4,0,.6,1) infinite .5s}
+@keyframes pendingRing{0%{transform:scale(.85);opacity:1}100%{transform:scale(1.4);opacity:0}}
+.pending-inner h1{font-family:'Lora',serif;font-size:28px;color:#fff;margin-bottom:10px;line-height:1.2}
+.pending-inner .pending-msg{font-size:15px;color:rgba(255,255,255,.65);line-height:1.7;max-width:300px;margin-bottom:32px}
+.pending-status-card{background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:18px 22px;width:100%;max-width:320px;margin-bottom:24px}
+.pending-status-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0}
+.pending-status-row:not(:last-child){border-bottom:1px solid rgba(255,255,255,.1)}
+.psr-label{font-size:13px;color:rgba(255,255,255,.5)}
+.psr-value{font-size:14px;font-weight:600;color:#fff}
+.psr-badge{padding:4px 12px;border-radius:var(--r999);font-size:12px;font-weight:700}
+.psr-pending{background:rgba(232,160,48,.2);color:#e8a030}
+.psr-active{background:rgba(61,143,110,.2);color:#5aab8a}
+.psr-rejected{background:rgba(201,79,59,.2);color:#e07060}
+.pending-check-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:12px 28px;border-radius:var(--r999);font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:12px}
+.pending-check-btn:hover{background:rgba(255,255,255,.25)}
+.pending-check-btn:disabled{opacity:.5;cursor:not-allowed}
+.pending-back{background:none;border:none;color:rgba(255,255,255,.4);font-size:13px;cursor:pointer;transition:color .15s}
+.pending-back:hover{color:rgba(255,255,255,.7)}
+
+/* ═══════════════════════════════════════════
+   FACILITY APPROVALS TAB
+═══════════════════════════════════════════ */
+.approval-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r16);padding:18px;margin-bottom:12px;box-shadow:var(--s2);transition:all .2s;animation:fadeIn .3s ease both}
+.approval-card:hover{box-shadow:var(--s3)}
+.approval-top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.approval-ava{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.approval-info{flex:1}
+.approval-name{font-size:16px;font-weight:700;color:var(--text)}
+.approval-meta{font-size:12px;color:var(--text-muted);margin-top:2px}
+.approval-details{background:var(--bg);border:1px solid var(--border);border-radius:var(--r12);padding:12px;margin-bottom:14px}
+.approval-detail-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
+.approval-detail-row .adl{color:var(--text-muted)}
+.approval-detail-row .adv{font-weight:600;color:var(--text)}
+.approval-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.approval-count-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--r500);color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:50%;padding:0 5px;margin-left:6px}
+
+/* ═══════════════════════════════════════════
+   OVERLAYS (SOS, Modal)
+═══════════════════════════════════════════ */
+.overlay{position:fixed;inset:0;background:rgba(26,24,21,.55);z-index:200;display:flex;align-items:flex-end;backdrop-filter:blur(2px)}
+.overlay.hidden{display:none}
+.sheet{background:var(--surface);border-radius:24px 24px 0 0;padding:24px 20px 36px;width:100%;max-height:88vh;overflow-y:auto;animation:slideUp .35s cubic-bezier(.4,0,.2,1) both;box-shadow:var(--s4)}
+.sheet-title{font-family:'Lora',serif;font-size:21px;font-weight:600;color:var(--text);margin-bottom:16px}
+.sos-sheet{background:var(--surface);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;animation:slideUp .35s cubic-bezier(.4,0,.2,1) both}
+.sos-header{text-align:center;margin-bottom:20px}
+.sos-icon{font-size:48px;margin-bottom:10px}
+.sos-title{font-family:'Lora',serif;font-size:24px;font-weight:600;color:var(--r500);margin-bottom:6px}
+.sos-sub{font-size:14px;color:var(--text-muted);line-height:1.6}
+.sos-contact{background:var(--bg);border:1px solid var(--border);border-radius:var(--r14,var(--r12));padding:16px;margin-bottom:10px}
+.sos-contact h4{font-size:15px;font-weight:700;margin-bottom:4px}
+.sos-contact p{font-size:13px;color:var(--text-muted);line-height:1.5}

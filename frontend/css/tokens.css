@@ -1,0 +1,36 @@
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════ */
+:root {
+  /* Forest greens — patient / recovery */
+  --g900:#0d2e20; --g800:#1a4a3a; --g700:#22614c; --g600:#2d7a5e;
+  --g500:#3d8f6e; --g400:#5aab8a; --g300:#88c7aa; --g200:#b8dece;
+  --g100:#d8eee5; --g50:#edf7f2;
+  /* Ocean blue — facility / clinical */
+  --b900:#0c2d4a; --b800:#163f66; --b700:#1e5280; --b600:#2a6fa8;
+  --b500:#3a85c0; --b400:#5fa3d4; --b300:#94c3e6; --b200:#c0ddf2;
+  --b100:#deeef9; --b50:#edf6fc;
+  /* Amber — XP / rewards */
+  --a700:#8a5000; --a600:#b36800; --a500:#d4850a; --a400:#e8a030;
+  --a200:#f9d89a; --a100:#fef0d0; --a50:#fffaf0;
+  /* Coral — alerts / danger */
+  --r600:#a83020; --r500:#c94f3b; --r400:#e07060;
+  --r100:#fde8e5; --r50:#fff5f4;
+  /* Neutrals */
+  --n900:#1a1815; --n800:#2c2a26; --n700:#3e3b36;
+  --n600:#554f48; --n500:#6e665e; --n400:#8a837a;
+  --n300:#aaa49c; --n200:#ccc7c0; --n100:#e4e0d8;
+  --n50:#f8f5ef; --n30:#fbf9f5; --white:#fffefb;
+  /* Semantic */
+  --surface:var(--white); --bg:var(--n50);
+  --border:var(--n100); --border-strong:var(--n200);
+  --text:var(--n900); --text-mid:var(--n700);
+  --text-muted:var(--n500); --text-faint:var(--n300);
+  /* Radius */
+  --r4:4px; --r8:8px; --r12:12px; --r16:16px; --r20:20px; --r999:999px;
+  /* Shadow */
+  --s1:0 1px 3px rgba(26,24,21,.06),0 1px 2px rgba(26,24,21,.04);
+  --s2:0 2px 8px rgba(26,24,21,.08),0 1px 3px rgba(26,24,21,.05);
+  --s3:0 4px 16px rgba(26,24,21,.10),0 2px 6px rgba(26,24,21,.06);
+  --s4:0 8px 32px rgba(26,24,21,.13),0 4px 12px rgba(26,24,21,.07);
+}

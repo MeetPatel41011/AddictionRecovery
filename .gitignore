@@ -1,0 +1,15 @@
+# Environment variables
+.env
+.ENV
+
+# Python
+__pycache__/
+*.pyc
+
+# Local Data
+chroma_db/
+client data/
+*.log
+
+# Large media files (exceed GitHub 100MB limit)
+*.mp4
