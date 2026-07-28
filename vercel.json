@@ -1,0 +1,13 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/(user|patient|facility|clinician|complete-task|treatment-plan|get-tasks|analytics|ai-learning-log|api)(.*)",
+      "destination": "https://YOUR-RENDER-BACKEND-URL.onrender.com/$1$2"
+    },
+    {
+      "source": "/",
+      "destination": "/recovery-compass.html"
+    }
+  ]
+}
