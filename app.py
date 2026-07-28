@@ -175,23 +175,66 @@ from fastapi import Request
 @app.post("/api/chat")
 async def chat_with_coach(req: Request):
     """
-    Proxies chat requests to the Gemini API securely.
-    Reads GEMINI_API_KEY from environment variables.
+    Proxies chat requests to the OpenAI API securely.
+    Includes rate limiting and strict guardrails.
     """
-    import requests
     import logging
+    from openai import OpenAI
     
-    api_key = os.getenv("GEMINI_API_KEY")
+    # 1. Rate Limiting Check (7/hr, 100/week)
+    client_ip = req.client.host if req.client else "unknown"
+    if client_ip != "unknown" and not db.check_chat_rate_limit(client_ip):
+        return {
+            "candidates": [{
+                "content": {
+                    "parts": [{"text": "You have reached your limit of questions (7 per hour or 100 per week). Please check back later."}]
+                }
+            }]
+        }
+    
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured on server.")
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured on server.")
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-    
     try:
         body = await req.json()
-        resp = requests.post(url, json=body)
-        resp.raise_for_status()
-        return resp.json()
+        
+        # 2. Extract system instruction and apply STRICT guardrails
+        system_text = "You are a helpful addiction recovery coach."
+        if "systemInstruction" in body and body["systemInstruction"]["parts"]:
+            system_text = body["systemInstruction"]["parts"][0].get("text", "")
+            
+        system_text += "\n\nCRITICAL STRICT GUARDRAILS:\n"
+        system_text += "1. You MUST ONLY answer questions related to helping people quit addiction.\n"
+        system_text += "2. If the user asks ANY question outside of addiction recovery, you MUST reply EXACTLY with 'I CAN NOT ANSWER'. Do not say anything else.\n"
+        system_text += "3. If the patient appears to be in severe trouble, danger, or experiencing a medical crisis, DO NOT give any advice. Instead, instruct them immediately to contact a hospital or emergency services.\n"
+        
+        # 3. Convert Gemini payload to OpenAI payload
+        messages = [{"role": "system", "content": system_text}]
+        for msg in body.get("contents", []):
+            role = "assistant" if msg.get("role") == "model" else "user"
+            parts = msg.get("parts", [])
+            text = parts[0].get("text", "") if parts else ""
+            messages.append({"role": role, "content": text})
+            
+        # 4. Call OpenAI API
+        client = OpenAI(api_key=api_key)
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages
+        )
+        
+        reply_text = completion.choices[0].message.content
+        
+        # 5. Mock Gemini response format so frontend doesn't need to change
+        return {
+            "candidates": [{
+                "content": {
+                    "parts": [{"text": reply_text}]
+                }
+            }]
+        }
+        
     except Exception as e:
         logging.error(f"Chat API error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

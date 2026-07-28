@@ -518,3 +518,41 @@ def get_clinician_vs_general_stats(addiction_type: str) -> dict:
 if __name__ == "__main__":
     init_tables()
     print("[OK] Database tables created successfully!")
+
+def check_chat_rate_limit(ip_address: str) -> bool:
+    """Returns True if allowed, False if blocked (over 7/hour or 100/week)."""
+    try:
+        with get_connection() as conn:
+            cur = conn.cursor()
+            
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS chat_requests (
+                    id SERIAL PRIMARY KEY,
+                    ip_address VARCHAR(255) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Check last hour
+            cur.execute("""
+                SELECT COUNT(*) FROM chat_requests 
+                WHERE ip_address = %s AND created_at >= NOW() - INTERVAL '1 hour'
+            """, (ip_address,))
+            hour_count = cur.fetchone()[0]
+            
+            # Check last week
+            cur.execute("""
+                SELECT COUNT(*) FROM chat_requests 
+                WHERE ip_address = %s AND created_at >= NOW() - INTERVAL '1 week'
+            """, (ip_address,))
+            week_count = cur.fetchone()[0]
+            
+            if hour_count >= 7 or week_count >= 100:
+                return False
+                
+            # Log this request
+            cur.execute("INSERT INTO chat_requests (ip_address) VALUES (%s)", (ip_address,))
+            return True
+    except Exception as e:
+        logger.error(f"Rate limit DB error (failing open): {e}")
+        return True
