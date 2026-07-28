@@ -40,7 +40,7 @@ app.mount("/frontend", StaticFiles(directory=os.path.join(BASE_DIR, "frontend"))
 
 @app.get("/")
 async def serve_frontend():
-    return FileResponse(os.path.join(BASE_DIR, "recovery-compass.html"))
+    return FileResponse(os.path.join(BASE_DIR, "index.html"))
 
 # ── Initialize on startup ────────────────────────────────────────
 

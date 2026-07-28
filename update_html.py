@@ -1,6 +1,6 @@
 import re
 
-with open('recovery-compass.html', 'r', encoding='utf-8') as f:
+with open('index.html', 'r', encoding='utf-8') as f:
     text = f.read()
 
 # Replace <style>...</style>
@@ -25,7 +25,7 @@ text = re.sub(r'<script>\s*// ══════.*?</script>', script_link, text
 # There's also an empty <script> block right before the big one, let's clean it up
 text = re.sub(r'<script>\s*</script>\s*</body>', '</body>', text, flags=re.DOTALL)
 
-with open('recovery-compass.html', 'w', encoding='utf-8') as f:
+with open('index.html', 'w', encoding='utf-8') as f:
     f.write(text)
 
-print('Successfully updated recovery-compass.html')
+print('Successfully updated index.html')
